@@ -55,3 +55,12 @@ model User {
  is_admin          Boolean       @default(false)
 }
 
+model Seller {
+  id                   Int        @id @default(autoincrement())
+  fullname             String     // Nome completo
+  birth_date           DateTime   @unique   // Não pode se repetir na tabela
+  identity_document    String     @unique
+  email                String     @unique   
+  phone                String     
+  is_manager           Boolean     @default(false)
+}
