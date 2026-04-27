@@ -48,6 +48,35 @@ controller.create = async function(req, res) {
  }
 }
 
+controller.login = async function(req, res) {
+  try {
+    const user = await prisma.user.findUnique({
+      where: { username: req.body?.username }
+    })
+
+    if(!user) return res.status(401).end()
+
+    const passwordOk = await argon2.verify(user.password, req.body.password)
+
+    if(passwordOk) {
+      const token = jwt.sign(
+        user, 
+        process.env.TOKEN_SECRET, 
+        { expiresIn: '24h' }
+      )
+      delete user.password
+      res.send({ token, user })
+    }
+    else {
+      res.status(401).end()
+    }
+  }
+  catch(error) {
+    console.error(error)
+    res.status(500).end()
+  }
+}
+
 controller.retrieveAll = async function(req, res) {
  try {
    // Recupera todos os registros de clientes, ordenados pelo

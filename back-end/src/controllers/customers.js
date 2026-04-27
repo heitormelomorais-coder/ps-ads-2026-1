@@ -10,50 +10,48 @@ const controller = {}   // Objeto vazio
 // res ~> representa a resposta (response)
 controller.create = async function(req, res) {
  try {
-   // Para a inserção no BD, os dados são enviados
-   // dentro de um objeto chamado "body" que vem
-   // dentro da requisição ("req")
-   await prisma.users.create({ data: req.body })
+  if (!prisma || !prisma.customer) {
+      console.error("ERRO: O Prisma Client não carregou o model 'customer' corretamente.")
+      return res.status(500).send({ error: "Erro interno na conexão com o banco" })
+    }
 
-
-   // Se tudo der certo, enviamos o código HTTP
-   // apropriado, no caso
-   // HTTP 201: created
-   res.status(201).end()
- }
- catch(error) {
-   // Se algo de errado ocorrer, cairemos aqui
-   console.error(error)  // Exibe o erro no terminal
-
-
-   // Enviamos como resposta o código HTTP relativo
-   // a erro interno do servidor
-   // HTTP 500: Internal Server Error
-   res.status(500).end()
+    // Tenta criar o cliente usando os dados do body
+    const result = await prisma.customer.create({ data: req.body })
+    
+    console.log('Cliente criado com sucesso:', result.id)
+    res.status(201).end()
+  }
+  catch(error) {
+    console.error("ERRO AO CRIAR CLIENTE:")
+    console.error(error)
+    
+    // Se for erro de campo faltando ou tipo errado
+    if(error.code === 'P2002') {
+      return res.status(400).send({ error: "Documento ou Email já existente" })
+    }
+    
+    res.status(500).send({ 
+      message: "Erro ao processar criação",
+      error: error.message 
+    })
  }
 }
 
 controller.retrieveAll = async function(req, res) {
  try {
-   // Recupera todos os registros de clientes, ordenados pelo
-   // campo "name", ascendente
-   const result = await prisma.users.findMany({
-     orderBy: [ { fullname: 'asc' }]
-   })
-
-
-   // HTTP 200: OK (implícito)
-   res.send(result)
- }
- catch(error) {
-   // Se algo de errado ocorrer, cairemos aqui
-   console.error(error)  // Exibe o erro no terminal
-
-
-   // Enviamos como resposta o código HTTP relativo
-   // a erro interno do servidor
-   // HTTP 500: Internal Server Error
-   res.status(500).end()
+   if (prisma && prisma.customer) {
+      const result = await prisma.customer.findMany({
+        orderBy: [ { name: 'asc' } ]
+      })
+      res.send(result)
+    } else {
+      throw new Error("Objeto prisma.customer não encontrado")
+    }
+  }
+  catch(error) {
+    console.error("ERRO NA LISTAGEM DE CLIENTES:")
+    console.error(error)
+    res.status(500).send({ error: "Erro interno ao listar clientes" })
  }
 }
 
@@ -61,7 +59,7 @@ controller.retrieveOne = async function(req, res) {
  try {
    // Busca no banco de dados apenas o registro indicado
    // pelo parâmetro "id"
-   const result = await prisma.users.findUnique({
+   const result = await prisma.customers.findUnique({
      where: { id: Number(req.params.id) }
    })
 
@@ -85,65 +83,36 @@ controller.retrieveOne = async function(req, res) {
 
 controller.update = async function(req, res) {
  try {
-   // Busca o registro no banco de dados por seu id
-   // e o atualiza com as informações que vieram em
-   // req.body
-   await prisma.users.update({
-     where: { id: Number(req.params.id) },
-     data: req.body
-   })
-
-
-   // Encontrou e atualizou ~> HTTP 204: No Content
-   res.status(204).end()
- }
- catch(error) {
-   // Se algo de errado ocorrer, cairemos aqui
-   console.error(error)  // Exibe o erro no terminal
-
-
-   // No caso da biblioteca Prisma, é gerado um erro com
-   // código 'P2025' caso o registro com o id especificado
-   // não exista. Aqui, estamos detectando se é o caso e
-   // retornando HTTP 404: Not Found para indicar essa
-   // situação
-   if(error?.code === 'P2025') res.status(404).end()
-
-
-   // Se o erro for de outro tipo, retornamos o código de erro
-   // padrão
-   // HTTP 500: Internal Server Error
-   else res.status(500).end()
+   const model = prisma.customer || prisma.Customer
+    
+    await model.update({
+      where: { id: Number(req.params.id) },
+      data: req.body
+    })
+    res.status(204).end()
+  }
+  catch(error) {
+    console.error("ERRO NA ATUALIZAÇÃO:")
+    console.error(error)
+    if(error?.code === 'P2025') res.status(404).send({ error: "Cliente não encontrado" })
+    else res.status(500).send(error)
  }
 }
 
 controller.delete = async function(req, res) {
  try {
-   await prisma.users.delete({
-     where: { id: Number(req.params.id) }
-   })
+   const model = prisma.customer || prisma.Customer
 
-
-   // Encontrou e excluiu ~> HTTP 204: No Content
-   res.status(204).end()
- }
- catch(error) {
-   // Se algo de errado ocorrer, cairemos aqui
-   console.error(error)  // Exibe o erro no terminal
-
-
-   // No caso da biblioteca Prisma, é gerado um erro com
-   // código 'P2025' caso o registro com o id especificado
-   // não exista. Aqui, estamos detectando se é o caso e
-   // retornando HTTP 404: Not Found para indicar essa
-   // situação
-   if(error?.code === 'P2025') res.status(404).end()
-
-
-   // Se o erro for de outro tipo, retornamos o código de erro
-   // padrão
-   // HTTP 500: Internal Server Error
-   else res.status(500).end()
+    await model.delete({
+      where: { id: Number(req.params.id) }
+    })
+    res.status(204).end()
+  }
+  catch(error) {
+    console.error("ERRO NA EXCLUSÃO:")
+    console.error(error)
+    if(error?.code === 'P2025') res.status(404).send({ error: "Cliente não encontrado" })
+    else res.status(500).send(error)
  } 
 }
 
