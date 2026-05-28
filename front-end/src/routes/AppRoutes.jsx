@@ -1,17 +1,29 @@
 import { Routes, Route } from 'react-router-dom'
+import AuthGuard from './AuthGuard'
+import { routes, UserLevel } from './routes'
 
-import Homepage from '../pages/Homepage'
-
-import CarsList from '../pages/cars/CarsList'
-import CustomersList from '../pages/customers/CustomersList'
 
 export default function AppRoutes() {
- return <Routes>
-   <Route path="/" element={ <Homepage /> } />
+ return (
+   <Routes>
+     {
+       routes.map(route => {
+         let element
+         if (route.userLevel > UserLevel.ANY) {
+           element = <AuthGuard userLevel={route.userLevel}>
+             {route.element}
+           </AuthGuard>
+         }
+         else element = route.element
 
 
-   <Route path="/cars" element={ <CarsList /> } />
-   <Route path="/customers" element={ <CustomersList /> } />
-
- </Routes>
+         return <Route
+           key={route.route}
+           path={route.route}
+           element={element}
+         />
+       })
+     }
+   </Routes>
+ )
 }
