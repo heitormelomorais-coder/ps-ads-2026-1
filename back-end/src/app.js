@@ -11,8 +11,8 @@ import cors from 'cors'
 
 
 app.use(cors({
- origin: process.env.ALLOWED_ORIGINS.split(','),
-    credentials: true   // Habilita o envio de cookies para o front-end
+  origin: ['http://localhost:5173', 'http://127.0.0.1:5173'],
+  credentials: true // Mantém habilitado para os cookies do login funcionarem
 }))
 
 app.use(logger('dev'))
